@@ -34,26 +34,14 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Prisma — migrations ĐƯỢC commit (lịch sử schema, dùng cho prisma migrate deploy)
-
-# seed.ts chứa dữ liệu/mật khẩu demo — giữ local, không đưa lên GitHub
 prisma/seed.ts
 
 # IDE
 .vscode/
 .idea/
 
-# Ảnh nguồn local (dùng để test upload ảnh & seed thủ công cho user demo)
-# — không đưa lên GitHub / không deploy Vercel
 /Images/
-
-# Ghi chú/credential Cloudinary — không đưa lên GitHub
 /cloudinary.txt
-
-# Ảnh logo gốc chưa xử lý ở thư mục root (bản dùng thật nằm ở public/logo.png)
 /logo.png
-
-# Tài liệu hướng dẫn chạy local & script chạy tay (seed/upload ảnh demo)
-# — chỉ dùng ở máy local, không đưa lên GitHub
 /docs/
 /scripts/
