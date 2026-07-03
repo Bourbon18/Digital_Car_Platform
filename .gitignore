@@ -36,6 +36,9 @@ next-env.d.ts
 
 # Prisma — migrations ĐƯỢC commit (lịch sử schema, dùng cho prisma migrate deploy)
 
+# seed.ts chứa dữ liệu/mật khẩu demo — giữ local, không đưa lên GitHub
+prisma/seed.ts
+
 # IDE
 .vscode/
 .idea/
