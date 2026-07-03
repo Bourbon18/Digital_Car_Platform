@@ -1,0 +1,56 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env
+.env*.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Prisma — migrations ĐƯỢC commit (lịch sử schema, dùng cho prisma migrate deploy)
+
+# IDE
+.vscode/
+.idea/
+
+# Ảnh nguồn local (dùng để test upload ảnh & seed thủ công cho user demo)
+# — không đưa lên GitHub / không deploy Vercel
+/Images/
+
+# Ghi chú/credential Cloudinary — không đưa lên GitHub
+/cloudinary.txt
+
+# Ảnh logo gốc chưa xử lý ở thư mục root (bản dùng thật nằm ở public/logo.png)
+/logo.png
+
+# Tài liệu hướng dẫn chạy local & script chạy tay (seed/upload ảnh demo)
+# — chỉ dùng ở máy local, không đưa lên GitHub
+/docs/
+/scripts/

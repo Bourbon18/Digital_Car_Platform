@@ -1,0 +1,17 @@
+# Thư mục tài liệu nội bộ — không cần khi deploy app lên Vercel
+docs
+
+# Script chạy tay (seed ảnh...) — không thuộc app runtime
+scripts
+
+# Ảnh nguồn local để upload thủ công — không cần khi deploy
+Images
+
+# Ghi chú/credential Cloudinary — không deploy
+cloudinary.txt
+
+# OpenSpec (đặc tả nội bộ) — không thuộc app runtime
+openspec
+
+# Claude Code — không deploy
+.claude

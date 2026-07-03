@@ -1,0 +1,562 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  buyer
+  individual_seller
+  individual_renter
+  dealer
+  admin
+}
+
+enum UserStatus {
+  unverified
+  active
+  suspended
+}
+
+enum DealerVerificationStatus {
+  pending
+  verified
+  rejected
+}
+
+enum ListingType {
+  for_sale
+  for_rent
+}
+
+enum VehicleCondition {
+  new
+  used
+}
+
+enum ListingStatus {
+  draft
+  pending
+  active
+  rejected
+  deleted
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  paid
+  active
+  completed
+  rejected
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  success
+  failed
+  refunded
+}
+
+enum SubscriptionPlan {
+  free
+  pro
+  business
+}
+
+enum SubscriptionStatus {
+  pending_payment
+  active
+  expired
+  rejected
+  cancelled
+}
+
+enum NotificationType {
+  booking_new
+  booking_confirmed
+  booking_rejected
+  booking_cancelled
+  booking_completed
+  payment_success
+  payment_refund
+  listing_approved
+  listing_rejected
+  listing_pending_review
+  new_message
+  review_new
+  review_reported
+  dealer_verified
+  account_suspended
+  booking_reminder
+  subscription_pending
+  subscription_activated
+  subscription_rejected
+}
+
+// ============================================================
+// USER & AUTH
+// ============================================================
+
+model User {
+  id             String     @id @default(cuid())
+  email          String     @unique
+  passwordHash   String?
+  name           String?
+  phone          String?
+  avatarUrl      String?
+  role           UserRole   @default(buyer)
+  status         UserStatus @default(unverified)
+  emailVerified    DateTime?
+  emailChangedAt   DateTime?
+  lastLoginAt      DateTime?
+  paymentQrUrl     String?   @db.Text
+  bankAccountInfo  String?
+  plan             SubscriptionPlan @default(free)
+  planExpiresAt    DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  dealerProfile  DealerProfile?
+  subscriptions  Subscription[]
+  featuredBoosts FeaturedBoost[]
+  paymentQrs     PaymentQr[]
+  listings       Listing[]
+  bookings       Booking[]        @relation("BuyerBookings")
+  reviews        Review[]         @relation("ReviewerReviews")
+  savedListings  SavedListing[]
+  sentMessages     ContactMessage[] @relation("SenderMessages")
+  receivedMessages ContactMessage[] @relation("ReceiverMessages")
+  notifications  Notification[]
+  notifPrefs     NotificationPreference[]
+
+  accounts       Account[]
+  sessions       Session[]
+  verificationTokens  VerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+  emailChangeTokens   EmailChangeToken[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+}
+
+model DealerProfile {
+  id                   String                   @id @default(cuid())
+  userId               String                   @unique
+  businessName         String
+  showroomAddress      String?
+  licenseUrl           String?
+  verificationStatus   DealerVerificationStatus @default(pending)
+  verifiedAt           DateTime?
+  createdAt            DateTime                 @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+model EmailChangeToken {
+  id        String   @id @default(cuid())
+  userId    String
+  newEmail  String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+// NextAuth required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// CAR BRANDS & MODELS
+// ============================================================
+
+model Brand {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  slug      String     @unique
+  logoUrl   String?
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+
+  models    CarModel[]
+  listings  Listing[]
+
+  @@index([slug])
+}
+
+model CarModel {
+  id        String   @id @default(cuid())
+  brandId   String
+  name      String
+  slug      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  brand    Brand     @relation(fields: [brandId], references: [id])
+  listings Listing[]
+
+  @@unique([brandId, slug])
+  @@index([brandId])
+}
+
+// ============================================================
+// LISTINGS
+// ============================================================
+
+model Listing {
+  id              String           @id @default(cuid())
+  userId          String
+  brandId         String
+  modelId         String
+  title           String
+  slug            String           @unique
+  year            Int
+  mileage         Int?
+  color           String?
+  condition       VehicleCondition
+  listingType     ListingType
+  price           Decimal          @db.Decimal(15, 2)
+  pricePerDay     Decimal?         @db.Decimal(15, 2)
+  weeklyDiscount  Boolean          @default(false)
+  description     String           @db.Text
+  status          ListingStatus    @default(pending)
+  city            String
+  address         String?
+  latitude        Float?
+  longitude       Float?
+  viewCount       Int              @default(0)
+  contactCount    Int              @default(0)
+  averageRating   Float?
+  reviewCount     Int              @default(0)
+  rejectionReason String?
+  priorityReview  Boolean          @default(false)
+  featured        Boolean          @default(false)
+  featuredUntil   DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user           User             @relation(fields: [userId], references: [id])
+  brand          Brand            @relation(fields: [brandId], references: [id])
+  model          CarModel         @relation(fields: [modelId], references: [id])
+  images         ListingImage[]
+  bookings       Booking[]
+  reviews        Review[]
+  savedBy        SavedListing[]
+  contactMessages ContactMessage[]
+  featuredBoosts FeaturedBoost[]
+
+  @@index([status])
+  @@index([listingType])
+  @@index([userId])
+  @@index([city])
+  @@index([brandId])
+}
+
+model ListingImage {
+  id           String  @id @default(cuid())
+  listingId    String
+  url          String
+  thumbnailUrl String?
+  publicId     String
+  order        Int     @default(0)
+  createdAt    DateTime @default(now())
+
+  listing  Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+}
+
+// ============================================================
+// BOOKINGS
+// ============================================================
+
+model Booking {
+  id              String        @id @default(cuid())
+  listingId       String
+  buyerId         String
+  startDate       DateTime
+  endDate         DateTime
+  totalDays       Int
+  pricePerDay     Decimal       @db.Decimal(15, 2)
+  totalAmount     Decimal       @db.Decimal(15, 2)
+  depositAmount   Decimal       @db.Decimal(15, 2)
+  pickupLocation  String?
+  status          BookingStatus @default(pending)
+  rejectionReason String?
+  confirmedAt     DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  returnReminderSent Boolean    @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  listing  Listing   @relation(fields: [listingId], references: [id])
+  buyer    User      @relation("BuyerBookings", fields: [buyerId], references: [id])
+  payment  Payment?
+  review   Review?
+
+  @@index([listingId])
+  @@index([buyerId])
+  @@index([status])
+}
+
+// ============================================================
+// PAYMENTS
+// ============================================================
+
+model Payment {
+  id                  String        @id @default(cuid())
+  bookingId           String        @unique
+  amount              Decimal       @db.Decimal(15, 2)
+  currency            String        @default("VND")
+  method              String        @default("vnpay")
+  vnpayTransactionNo  String?       @unique
+  vnpayResponseCode   String?
+  status              PaymentStatus @default(pending)
+  refundAmount        Decimal?      @db.Decimal(15, 2)
+  refundedAt          DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  booking  Booking  @relation(fields: [bookingId], references: [id])
+
+  @@index([vnpayTransactionNo])
+}
+
+// ============================================================
+// REVIEWS
+// ============================================================
+
+model Review {
+  id          String   @id @default(cuid())
+  bookingId   String   @unique
+  reviewerId  String
+  listingId   String
+  rating      Int
+  content     String   @db.Text
+  hidden      Boolean  @default(false)
+  hiddenAt    DateTime?
+  createdAt   DateTime @default(now())
+
+  booking   Booking      @relation(fields: [bookingId], references: [id])
+  reviewer  User         @relation("ReviewerReviews", fields: [reviewerId], references: [id])
+  listing   Listing      @relation(fields: [listingId], references: [id])
+  reports   ReviewReport[]
+
+  @@index([listingId])
+  @@index([reviewerId])
+}
+
+model ReviewReport {
+  id         String   @id @default(cuid())
+  reviewId   String
+  reporterId String
+  reason     String
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  review  Review  @relation(fields: [reviewId], references: [id])
+
+  @@index([reviewId])
+}
+
+// ============================================================
+// MARKETPLACE — SAVED LISTINGS & CONTACT MESSAGES
+// ============================================================
+
+model SavedListing {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+}
+
+model ContactMessage {
+  id         String    @id @default(cuid())
+  listingId  String
+  senderId   String
+  receiverId String?
+  content    String    @db.Text
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  listing  Listing  @relation(fields: [listingId], references: [id])
+  sender   User     @relation("SenderMessages", fields: [senderId], references: [id])
+  receiver User?    @relation("ReceiverMessages", fields: [receiverId], references: [id])
+
+  @@index([listingId])
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String           @db.Text
+  read      Boolean          @default(false)
+  readAt    DateTime?
+  metadata  Json?
+  expiresAt DateTime
+  createdAt DateTime         @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([expiresAt])
+}
+
+model NotificationPreference {
+  id      String  @id @default(cuid())
+  userId  String
+  type    NotificationType
+  email   Boolean @default(true)
+  inApp   Boolean @default(true)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+// ============================================================
+// SUBSCRIPTIONS (gói dịch vụ trả phí)
+// ============================================================
+
+model Subscription {
+  id              String             @id @default(cuid())
+  userId          String
+  plan            SubscriptionPlan
+  billingCycle    String             // "monthly" | "yearly"
+  amount          Decimal            @db.Decimal(15, 2)
+  status          SubscriptionStatus @default(pending_payment)
+  paymentProofUrl String?            @db.Text
+  startedAt       DateTime?
+  expiresAt       DateTime?
+  activatedBy     String?            // id của admin kích hoạt
+  rejectionReason String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================================
+// FEATURED BOOSTS (đẩy tin nổi bật — dùng lượt từ gói dịch vụ)
+// ============================================================
+// Mỗi bản ghi là 1 lần dùng lượt "đẩy tin" trong tháng. Số lượt cho phép mỗi
+// tháng lấy từ gói (PLANS[plan].featuredPerMonth). Đếm bản ghi trong tháng
+// hiện tại để biết còn bao nhiêu lượt.
+
+model FeaturedBoost {
+  id         String   @id @default(cuid())
+  userId     String
+  listingId  String
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([listingId])
+}
+
+// ============================================================
+// PAYMENT QR CHANNELS (cổng nhận tiền BỔ SUNG — quyền lợi gói Business)
+// ============================================================
+// Cổng mặc định vẫn nằm ở User.paymentQrUrl. Bảng này lưu các cổng THÊM
+// (gói Business cho tối đa PLANS.business.maxPaymentQr - 1 cổng). Khi gói hết
+// hạn, cron expire-plans sẽ xóa các bản ghi này (chỉ còn cổng mặc định).
+
+model PaymentQr {
+  id        String   @id @default(cuid())
+  userId    String
+  qrUrl     String   @db.Text
+  bankInfo  String?
+  label     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
