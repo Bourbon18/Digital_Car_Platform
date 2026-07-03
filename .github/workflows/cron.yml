@@ -3,19 +3,19 @@ name: Scheduled Cron Jobs
 # Runs the app's background jobs by calling its /api/cron/* endpoints on a schedule.
 # This replaces Vercel Cron so all 5 jobs work on any Vercel plan (incl. free Hobby).
 #
-# Required repository secrets (Settings → Secrets and variables → Actions):
-#   APP_URL      – production base URL, e.g. https://your-app.vercel.app  (no trailing slash)
-#   CRON_SECRET  – same value as the CRON_SECRET environment variable on Vercel
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   APP_URL      - production base URL, e.g. https://your-app.vercel.app  (no trailing slash)
+#   CRON_SECRET  - same value as the CRON_SECRET environment variable on Vercel
 #
 # Schedules are in UTC. A manual run (workflow_dispatch) triggers all jobs at once.
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # cancel-expired-bookings — every 15 minutes
-    - cron: "0 1 * * *"      # send-pickup-reminders  — 01:00 UTC daily
-    - cron: "0 2 * * *"      # booking-reminders      — 02:00 UTC daily
-    - cron: "0 3 * * *"      # expire-featured        — 03:00 UTC daily
-    - cron: "0 4 * * *"      # expire-plans           — 04:00 UTC daily
+    - cron: "*/15 * * * *"   # cancel-expired-bookings - every 15 minutes
+    - cron: "0 1 * * *"      # send-pickup-reminders  - 01:00 UTC daily
+    - cron: "0 2 * * *"      # booking-reminders      - 02:00 UTC daily
+    - cron: "0 3 * * *"      # expire-featured        - 03:00 UTC daily
+    - cron: "0 4 * * *"      # expire-plans           - 04:00 UTC daily
   workflow_dispatch:
 
 jobs:
@@ -24,20 +24,25 @@ jobs:
     steps:
       - name: cancel-expired-bookings
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/15 * * * *'
-        run: curl -fsS --max-time 60 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/cron/cancel-expired-bookings"
+        run: |
+          curl -fsS --max-time 60 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/cron/cancel-expired-bookings"
 
       - name: send-pickup-reminders
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 1 * * *'
-        run: curl -fsS --max-time 60 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/cron/send-pickup-reminders"
+        run: |
+          curl -fsS --max-time 60 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/cron/send-pickup-reminders"
 
       - name: booking-reminders
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 2 * * *'
-        run: curl -fsS --max-time 60 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/cron/booking-reminders"
+        run: |
+          curl -fsS --max-time 60 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/cron/booking-reminders"
 
       - name: expire-featured
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 3 * * *'
-        run: curl -fsS --max-time 60 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/cron/expire-featured"
+        run: |
+          curl -fsS --max-time 60 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/cron/expire-featured"
 
       - name: expire-plans
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 4 * * *'
-        run: curl -fsS --max-time 60 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/cron/expire-plans"
+        run: |
+          curl -fsS --max-time 60 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/cron/expire-plans"
