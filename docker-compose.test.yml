@@ -1,0 +1,19 @@
+# Postgres riêng cho E2E test — tách biệt hoàn toàn với DB dev/production (Neon).
+# Dùng tmpfs nên data KHÔNG lưu lại giữa các lần `docker compose down` / `up` — mỗi lần chạy test là một DB sạch.
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: fast-postgres-test
+    environment:
+      POSTGRES_USER: fast_test
+      POSTGRES_PASSWORD: fast_test
+      POSTGRES_DB: fast_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fast_test -d fast_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 30

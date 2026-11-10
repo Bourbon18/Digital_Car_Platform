@@ -45,3 +45,12 @@ prisma/seed.ts
 /logo.png
 /docs/
 /scripts/
+
+# E2E tests (Playwright + pytest)
+e2e/.env.test
+e2e/.venv/
+e2e/__pycache__/
+e2e/tests/__pycache__/
+e2e/e2e-artifacts/
+/playwright-report/
+/test-results/
