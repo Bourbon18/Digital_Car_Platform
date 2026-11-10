@@ -76,7 +76,7 @@ jobs:
         run: npx prisma migrate deploy
 
       - name: Seed test DB
-        run: npx prisma db seed
+        run: npx tsx e2e/seed.ts
 
       - name: Build app
         run: npm run build
